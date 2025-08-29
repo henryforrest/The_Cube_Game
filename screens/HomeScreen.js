@@ -7,9 +7,7 @@ export default function HomeScreen({ navigation }) {
       <Text style={styles.title}> The Cube - 6 Exciting & Addicitive Minigames</Text>
       <Text style={styles.subtitle}>One attempt a day. How high can you get your score?</Text>
       <Button title="Play the Circle 🎯" onPress={() => navigation.navigate('Draw')} />
-      <View style={{ marginTop: 20 }}>
         <Button title="Play Opposite" onPress={() => navigation.navigate('Opposite')} />
-      </View>
     </View>
   );
 }
