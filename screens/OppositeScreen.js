@@ -21,6 +21,8 @@ const words = [
   "dog",
 ];
 
+let answers = {}
+
 export default function OppositeScreen({ navigation }) {
   const [answer, setAnswer] = useState("");
   const [submitted, setSubmitted] = useState(false);
@@ -64,9 +66,26 @@ export default function OppositeScreen({ navigation }) {
             <Text style={styles.subtitle}>
               You answered: <Text style={{ fontWeight: "bold" }}>{answer}</Text>
             </Text>
-            <Text style={styles.resultText}>
-              32% of players gave the same answer!
-            </Text>
+
+
+            {(() => {
+
+              // Update the answers object safely
+              if (answers[answer]) {
+                answers[answer] += 1;
+              } else {
+                answers[answer] = 1;
+              }
+
+              let percentage = ((answers[answer] / Object.values(answers).reduce((a, b) => a + b, 0)) * 100).toFixed(2);
+            
+              return (
+                <Text style={styles.resultText}>
+                  {percentage}% of players gave the same answer
+                </Text>
+              );
+            })()}
+
 
             <TouchableOpacity
               style={[styles.button, { marginTop: 20 }]}
