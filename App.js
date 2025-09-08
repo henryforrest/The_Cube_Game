@@ -7,7 +7,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import HomeScreen from "./screens/HomeScreen";
 import DrawScreen from "./screens/DrawScreen";
 import LeaderboardScreen from "./screens/LeaderboardScreen";
-import OppositeScreen from "./screens/OppositeScreen";
+import OppositeScreen from "./screens/Opposite";
 import BallScreen from "./screens/BallScreen";
 
 const Stack = createNativeStackNavigator();

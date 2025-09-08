@@ -6,12 +6,15 @@ import {
   TouchableOpacity,
   Alert,
   Dimensions,
+  Animated,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const { width } = Dimensions.get("window");
-const BOX_SIZE = width * 0.8;
-const BALL_RADIUS = 15;
-const VELOCITY = { x: 3, y: 4 }; // constant velocity
+const BOX_SIZE = Math.min(width * 0.6, 250);
+const BALL_RADIUS = 12;
+// slowed down velocity
+const VELOCITY = { x: 1.5, y: 2 };
 
 export default function HiddenBallGame({ navigation }) {
   const [ball, setBall] = useState({
@@ -22,10 +25,34 @@ export default function HiddenBallGame({ navigation }) {
   });
   const [litWall, setLitWall] = useState(null);
   const [clicked, setClicked] = useState(false);
+  const [ballVisible, setBallVisible] = useState(true);
+  const [locked, setLocked] = useState(false);
+
   const raf = useRef(null);
+  const flickerRef = useRef(null);
+
+  const ballOpacity = useRef(new Animated.Value(1)).current;
+
+  // check if already played today
+  useEffect(() => {
+    const checkAttempt = async () => {
+      const today = new Date().toDateString();
+      const lastAttempt = await AsyncStorage.getItem("hiddenBallAttempt");
+      if (lastAttempt === today) {
+        setLocked(true);
+        Alert.alert(
+          "Come Back Tomorrow ⏳",
+          "You only get one attempt per day!"
+        );
+      }
+    };
+    checkAttempt();
+  }, []);
 
   // animate ball
   useEffect(() => {
+    if (locked) return;
+
     const animate = () => {
       setBall((prev) => {
         let { x, y, vx, vy } = prev;
@@ -56,11 +83,50 @@ export default function HiddenBallGame({ navigation }) {
 
     raf.current = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(raf.current);
-  }, []);
+  }, [locked]);
 
-  const handlePress = (e) => {
-    if (clicked) return;
+  // fade out after 2s and then flicker
+  useEffect(() => {
+    if (locked) return;
+
+    const timeout = setTimeout(() => {
+      setBallVisible(false);
+    }, 2000);
+
+    flickerRef.current = setInterval(() => {
+      if (!ballVisible) {
+        Animated.sequence([
+          Animated.timing(ballOpacity, {
+            toValue: Math.random() * 0.6 + 0.2,
+            duration: 150,
+            useNativeDriver: true,
+          }),
+          Animated.timing(ballOpacity, {
+            toValue: 0,
+            duration: 150,
+            useNativeDriver: true,
+          }),
+        ]).start();
+      }
+    }, 2000);
+
+    return () => {
+      clearTimeout(timeout);
+      clearInterval(flickerRef.current);
+    };
+  }, [ballVisible, locked]);
+
+  const handlePress = async (e) => {
+    if (clicked || locked) return;
     setClicked(true);
+
+    // mark attempt for today
+    const today = new Date().toDateString();
+    await AsyncStorage.setItem("hiddenBallAttempt", today);
+
+    // stop animation + flicker
+    cancelAnimationFrame(raf.current);
+    clearInterval(flickerRef.current);
 
     const { locationX, locationY } = e.nativeEvent;
     const dx = locationX - ball.x;
@@ -89,7 +155,25 @@ export default function HiddenBallGame({ navigation }) {
         activeOpacity={1}
         onPress={handlePress}
         style={styles.box}
+        disabled={locked}
       >
+        {/* Ball (visible at start, flickers later) */}
+        {!locked && (
+          <Animated.View
+            style={{
+              position: "absolute",
+              top: ball.y - BALL_RADIUS,
+              left: ball.x - BALL_RADIUS,
+              width: BALL_RADIUS * 2,
+              height: BALL_RADIUS * 2,
+              borderRadius: BALL_RADIUS,
+              backgroundColor: "white",
+              opacity: ballVisible ? 1 : ballOpacity,
+            }}
+          />
+        )}
+
+        {/* Walls */}
         <View
           style={[
             styles.wall,
@@ -147,9 +231,7 @@ const styles = StyleSheet.create({
   box: {
     width: BOX_SIZE,
     height: BOX_SIZE,
-    backgroundColor: "#fff",
-    borderWidth: 2,
-    borderColor: "#aaa",
+    backgroundColor: "black",
     position: "relative",
   },
   wall: {
@@ -159,24 +241,24 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    height: 15,
+    height: 10,
   },
   bottomWall: {
     bottom: 0,
     left: 0,
     right: 0,
-    height: 15,
+    height: 10,
   },
   leftWall: {
     top: 0,
     bottom: 0,
     left: 0,
-    width: 15,
+    width: 10,
   },
   rightWall: {
     top: 0,
     bottom: 0,
     right: 0,
-    width: 15,
+    width: 10,
   },
 });

@@ -29,7 +29,7 @@ export default function HomeScreen({ navigation }) {
 
         <TouchableOpacity
           style={[styles.button, { marginTop: 15 }]}
-          onPress={() => navigation.navigate("HiddenBallGame")}
+          onPress={() => navigation.navigate("Ball")}
         >
           <Text style={styles.buttonText}>Play Hidden Ball 🔮</Text>
         </TouchableOpacity>
