@@ -1,100 +1,54 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 
+const games = [
+  { name: "Circle 🎯", route: "Draw" },
+  { name: "Opposite", route: "Opposite" },
+  { name: "Hidden Ball 🔮", route: "Ball" },
+  { name: "This or That", route: "ThisThat" },
+  { name: "Coming Soon" },
+  { name: "Coming Soon" },
+];
+
 export default function HomeScreen({ navigation }) {
+  const handlePress = (game) => {
+    if (game.route) navigation.navigate(game.route);
+    else alert("Coming Soon!");
+  };
+
   return (
     <View style={styles.container}>
-      <View style={styles.card}>
-        <Text style={styles.title}>The Cube</Text>
-        <Text style={styles.subtitle}>
-          6 Exciting & Addictive Minigames
-        </Text>
-        <Text style={styles.wordOfDay}>
-          One attempt a day. How high can you get your score?
-        </Text>
+      <Text style={styles.title}>The Cube</Text>
+      <Text style={styles.subtitle}>6 Exciting & Addictive Minigames</Text>
 
-        <TouchableOpacity
-          style={[styles.button, { marginTop: 20 }]}
-          onPress={() => navigation.navigate("Draw")}
-        >
-          <Text style={styles.buttonText}>Play the Circle 🎯</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.button, { marginTop: 15 }]}
-          onPress={() => navigation.navigate("Opposite")}
-        >
-          <Text style={styles.buttonText}>Play Opposite</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.button, { marginTop: 15 }]}
-          onPress={() => navigation.navigate("Ball")}
-        >
-          <Text style={styles.buttonText}>Play Hidden Ball 🔮</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.button, { marginTop: 15 }]}
-          onPress={() => navigation.navigate("ThisThat")}
-        >
-          <Text style={styles.buttonText}>Play This or That</Text>
-        </TouchableOpacity>
-
+      <View style={styles.grid}>
+        {games.map((game, index) => (
+          <TouchableOpacity
+            key={index}
+            style={styles.face}
+            onPress={() => handlePress(game)}
+          >
+            <Text style={styles.faceText}>{game.name}</Text>
+          </TouchableOpacity>
+        ))}
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  container: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#eef3fb" },
+  title: { fontSize: 28, fontWeight: "bold", marginBottom: 4, color: "#333" },
+  subtitle: { fontSize: 16, marginBottom: 20, color: "#2a4d8f" },
+  grid: { flexDirection: "row", flexWrap: "wrap", width: 300, justifyContent: "space-between" },
+  face: {
+    width: 140,
+    height: 140,
+    backgroundColor: "#2a4d8f",
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#eef3fb",
-    padding: 20,
-  },
-  card: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 24,
-    width: "100%",
-    maxWidth: 400,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 4 },
-    shadowRadius: 6,
-    elevation: 4,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    textAlign: "center",
-    marginBottom: 10,
-    color: "#333",
-  },
-  subtitle: {
-    fontSize: 18,
-    textAlign: "center",
-    color: "#2a4d8f",
-    marginBottom: 8,
-    fontWeight: "600",
-  },
-  wordOfDay: {
-    textAlign: "center",
-    fontSize: 16,
-    color: "#555",
     marginBottom: 20,
+    borderRadius: 16,
   },
-  button: {
-    backgroundColor: "#2a4d8f",
-    paddingVertical: 12,
-    borderRadius: 10,
-  },
-  buttonText: {
-    color: "#fff",
-    fontSize: 18,
-    textAlign: "center",
-    fontWeight: "600",
-  },
+  faceText: { color: "#fff", fontSize: 18, fontWeight: "600", textAlign: "center" },
 });
