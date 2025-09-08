@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { View, Button, StyleSheet, Alert } from "react-native";
 import {
   Canvas,
@@ -9,7 +9,46 @@ import {
 
 export default function DrawScreen() {
   const [path, setPath] = useState(Skia.Path.Make());
-  const points = useRef([]); // <-- useRef instead of useValue
+  const points = useRef([]);
+  const [hasPlayedToday, setHasPlayedToday] = useState(false);
+  const [todayScore, setTodayScore] = useState(0);
+
+  useEffect(() => {
+    checkDailyStatus();
+  }, []);
+
+  const checkDailyStatus = () => {
+    const today = new Date().toDateString();
+    const lastPlayed = global.localStorage?.getItem('circle-last-played');
+    const storedScore = global.localStorage?.getItem(`circle-score-${today}`);
+
+    if (lastPlayed === today && storedScore) {
+      setHasPlayedToday(true);
+      setTodayScore(parseInt(storedScore));
+    } else {
+      setHasPlayedToday(false);
+      setTodayScore(0);
+    }
+  };
+
+  const handleCircleComplete = (score) => {
+    const today = new Date().toDateString();
+    global.localStorage?.setItem(`circle-score-${today}`, score.toString());
+    global.localStorage?.setItem('circle-last-played', today);
+
+    setTodayScore(score);
+    setHasPlayedToday(true);
+
+    if (score >= 95) {
+      Alert.alert("Perfect!", "🎯 You're a circle master!");
+    } else if (score >= 85) {
+      Alert.alert("Amazing!", "🔥 Almost perfect!");
+    } else if (score >= 70) {
+      Alert.alert("Great!", "👏 Solid circle!");
+    } else {
+      Alert.alert("Good effort", "📈 Try again tomorrow!");
+    }
+  };
 
   const touchHandler = useTouchHandler({
     onStart: (touch) => {
@@ -19,14 +58,14 @@ export default function DrawScreen() {
       points.current = [{ x: touch.x, y: touch.y }];
     },
     onActive: (touch) => {
-      path.lineTo(touch.x, touch.y);
-      setPath(path.copy());
+      const newPath = path.copy();
+      newPath.lineTo(touch.x, touch.y);
+      setPath(newPath);
       points.current.push({ x: touch.x, y: touch.y });
     },
     onEnd: () => {
       const score = calculateCircleScore(points.current);
-      Alert.alert("Your Circle Score", `${score.toFixed(2)}%`);
-      // TODO: Save score to backend for leaderboard
+      handleCircleComplete(score);
     },
   });
 
@@ -40,7 +79,10 @@ export default function DrawScreen() {
       <Canvas style={styles.canvas} onTouch={touchHandler}>
         <Path path={path} color="black" style="stroke" strokeWidth={3} />
       </Canvas>
-      <Button title="Clear" onPress={handleReset} />
+      <View style={styles.buttonWrapper}>
+        {!hasPlayedToday && <Button title="Clear" onPress={handleReset} />}
+        {hasPlayedToday && <Button title={`Today's Score: ${todayScore}`} disabled />}
+      </View>
     </View>
   );
 }
@@ -48,7 +90,6 @@ export default function DrawScreen() {
 function calculateCircleScore(points) {
   if (!points || points.length < 10) return 0;
 
-  // Bounding box
   const xs = points.map((p) => p.x);
   const ys = points.map((p) => p.y);
   const minX = Math.min(...xs);
@@ -58,31 +99,24 @@ function calculateCircleScore(points) {
 
   const centerX = (minX + maxX) / 2;
   const centerY = (minY + maxY) / 2;
+
   const avgRadius =
     points.reduce(
-      (sum, p) =>
-        sum + Math.sqrt((p.x - centerX) ** 2 + (p.y - centerY) ** 2),
+      (sum, p) => sum + Math.sqrt((p.x - centerX) ** 2 + (p.y - centerY) ** 2),
       0
     ) / points.length;
 
-  // deviation from average radius
   const variance =
     points.reduce((sum, p) => {
       const r = Math.sqrt((p.x - centerX) ** 2 + (p.y - centerY) ** 2);
       return sum + Math.abs(r - avgRadius);
     }, 0) / points.length;
 
-  return Math.max(0, 100 - variance); // percent score
+  return Math.max(0, 100 - variance);
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-    justifyContent: "flex-end",
-  },
-  canvas: {
-    flex: 1,
-    backgroundColor: "#f0f0f0",
-  },
+  container: { flex: 1, backgroundColor: "#fff" },
+  canvas: { flex: 1, backgroundColor: "#f0f0f0" },
+  buttonWrapper: { padding: 10, backgroundColor: "#fff" },
 });

@@ -34,6 +34,13 @@ export default function HomeScreen({ navigation }) {
           <Text style={styles.buttonText}>Play Hidden Ball 🔮</Text>
         </TouchableOpacity>
 
+        <TouchableOpacity
+          style={[styles.button, { marginTop: 15 }]}
+          onPress={() => navigation.navigate("ThisThat")}
+        >
+          <Text style={styles.buttonText}>Play This or That</Text>
+        </TouchableOpacity>
+
       </View>
     </View>
   );

@@ -2,106 +2,106 @@ import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
-  TextInput,
   StyleSheet,
   TouchableOpacity,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const words = [
-  "pizza",
-  "rain",
-  "music",
-  "cloud",
-  "friendship",
-  "coffee",
-  "robot",
-  "mountain",
-  "mirror",
-  "dog",
+const questions = [
+  { a: "Pizza 🍕", b: "Burger 🍔" },
+  { a: "Coffee ☕", b: "Tea 🍵" },
+  { a: "Beach 🏖️", b: "Mountains 🏔️" },
+  { a: "Marvel 🦸", b: "DC 🦇" },
+  { a: "Cats 🐱", b: "Dogs 🐶" },
+  { a: "Sunrise 🌅", b: "Sunset 🌇" },
+  { a: "Texting 💬", b: "Calling 📞" },
+  { a: "Sweet 🍫", b: "Savory 🧂" },
+  { a: "Early bird 🌅", b: "Night owl 🌙" },
+  { a: "Books 📚", b: "Movies 🎬" },
 ];
 
 let answers = {}; // demo only, reset on app restart
 
-export default function OppositeScreen({ navigation }) {
-  const [answer, setAnswer] = useState("");
+export default function ThisOrThatScreen({ navigation }) {
+  const [selected, setSelected] = useState("");
   const [submitted, setSubmitted] = useState(false);
-  const [todayWord, setTodayWord] = useState("");
+  const [todayQuestion, setTodayQuestion] = useState({});
   const [todayKey, setTodayKey] = useState("");
 
   useEffect(() => {
-    // Word of the day (deterministic)
+    // Daily question (deterministic)
     const todayIndex =
-      Math.floor(Date.now() / (1000 * 60 * 60 * 24)) % words.length;
-    setTodayWord(words[todayIndex]);
+      Math.floor(Date.now() / (1000 * 60 * 60 * 24)) % questions.length;
+    setTodayQuestion(questions[todayIndex]);
 
-    // Daily storage key
     const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
-    const key = `submitted-${today}`;
+    const key = `thisorthat-${today}`;
     setTodayKey(key);
 
-    // Check if already submitted
     (async () => {
       const already = await AsyncStorage.getItem(key);
       if (already) {
         setSubmitted(true);
-        setAnswer(already);
+        setSelected(already);
       }
     })();
   }, []);
 
-  const handleSubmit = async () => {
-    if (!answer.trim()) return;
+  const handleSelect = async (choice) => {
+    setSelected(choice);
     setSubmitted(true);
-
-    // Save answer so user can’t submit again today
-    await AsyncStorage.setItem(todayKey, answer);
+    await AsyncStorage.setItem(todayKey, choice);
   };
 
   return (
     <View style={styles.container}>
       <View style={styles.card}>
-        <Text style={styles.title}>Opposite</Text>
-        <Text style={styles.wordOfDay}>Word of the day:</Text>
-        <Text style={styles.word}>{todayWord}</Text>
+        <Text style={styles.title}>This or That</Text>
+
+        <Text style={styles.subtitle}>Today's Question:</Text>
+        <Text style={styles.question}>
+          {todayQuestion.a}  <Text style={{ fontSize: 18 }}>or</Text>  {todayQuestion.b}
+        </Text>
 
         {!submitted ? (
-          <>
-            <TextInput
-              placeholder="Enter what you think is the opposite..."
-              value={answer}
-              onChangeText={setAnswer}
-              style={styles.input}
-            />
-
-            <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-              <Text style={styles.buttonText}>Submit</Text>
+          <View style={{ marginTop: 20 }}>
+            <TouchableOpacity
+              style={styles.button}
+              onPress={() => handleSelect(todayQuestion.a)}
+            >
+              <Text style={styles.buttonText}>{todayQuestion.a}</Text>
             </TouchableOpacity>
-          </>
+
+            <TouchableOpacity
+              style={[styles.button, { marginTop: 15 }]}
+              onPress={() => handleSelect(todayQuestion.b)}
+            >
+              <Text style={styles.buttonText}>{todayQuestion.b}</Text>
+            </TouchableOpacity>
+          </View>
         ) : (
           <View style={styles.resultBox}>
             <Text style={styles.subtitle}>
-              You answered:{" "}
-              <Text style={{ fontWeight: "bold" }}>{answer}</Text>
+              You chose: <Text style={{ fontWeight: "bold" }}>{selected}</Text>
             </Text>
 
             {(() => {
-              // Update the answers object (demo only)
-              if (answers[answer]) {
-                answers[answer] += 1;
+              // Update answers object (demo only)
+              if (answers[selected]) {
+                answers[selected] += 1;
               } else {
-                answers[answer] = 1;
+                answers[selected] = 1;
               }
 
               let percentage = (
-                (answers[answer] /
+                (answers[selected] /
                   Object.values(answers).reduce((a, b) => a + b, 0)) *
                 100
               ).toFixed(2);
 
               return (
                 <Text style={styles.resultText}>
-                  {percentage}% of players gave the same answer
+                  {percentage}% of players chose the same
                 </Text>
               );
             })()}
@@ -146,28 +146,18 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     color: "#333",
   },
-  wordOfDay: {
+  subtitle: {
     textAlign: "center",
     fontSize: 16,
     color: "#777",
     marginTop: 10,
   },
-  word: {
+  question: {
     fontSize: 24,
     fontWeight: "600",
     textAlign: "center",
     marginVertical: 15,
     color: "#2a4d8f",
-  },
-  input: {
-    height: 45,
-    borderColor: "#bbb",
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    marginTop: 20,
-    marginBottom: 20,
-    backgroundColor: "#fafafa",
   },
   button: {
     backgroundColor: "#2a4d8f",
@@ -179,12 +169,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     textAlign: "center",
     fontWeight: "600",
-  },
-  subtitle: {
-    fontSize: 16,
-    textAlign: "center",
-    color: "#444",
-    marginBottom: 10,
   },
   resultBox: {
     marginTop: 20,

@@ -4,16 +4,15 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Alert,
   Dimensions,
   Animated,
+  Alert,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const { width } = Dimensions.get("window");
 const BOX_SIZE = Math.min(width * 0.6, 250);
 const BALL_RADIUS = 12;
-// slowed down velocity
 const VELOCITY = { x: 1.5, y: 2 };
 
 export default function HiddenBallGame({ navigation }) {
@@ -40,10 +39,6 @@ export default function HiddenBallGame({ navigation }) {
       const lastAttempt = await AsyncStorage.getItem("hiddenBallAttempt");
       if (lastAttempt === today) {
         setLocked(true);
-        Alert.alert(
-          "Come Back Tomorrow ⏳",
-          "You only get one attempt per day!"
-        );
       }
     };
     checkAttempt();
@@ -138,11 +133,23 @@ export default function HiddenBallGame({ navigation }) {
         { text: "OK", onPress: () => navigation.goBack() },
       ]);
     } else {
-      Alert.alert("❌ You Lose!", "Better luck tomorrow!", [
+      Alert.alert("❌ You Failed!", "Try again tomorrow ⏳", [
         { text: "OK", onPress: () => navigation.goBack() },
       ]);
     }
   };
+
+  if (locked) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.title}>Hidden Ball</Text>
+        <Text style={styles.lockedMessage}>⏳ Come back tomorrow!</Text>
+        <Text style={styles.subtitle}>
+          You only get one attempt per day.
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -227,6 +234,13 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     textAlign: "center",
     color: "#555",
+  },
+  lockedMessage: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "#d9534f",
+    marginTop: 10,
+    textAlign: "center",
   },
   box: {
     width: BOX_SIZE,
