@@ -1,15 +1,19 @@
 import React, { useState, useRef, useEffect } from "react";
-import { View, Button, StyleSheet, Alert } from "react-native";
 import {
-  Canvas,
-  Path,
-  Skia,
-  useTouchHandler,
-} from "@shopify/react-native-skia";
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
+} from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Canvas, Path, Skia } from "@shopify/react-native-skia";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
 
-export default function DrawScreen() {
-  const [path, setPath] = useState(Skia.Path.Make());
-  const points = useRef([]);
+export default function DrawScreen({ navigation }) {
+  const [path, setPath] = useState(() => Skia.Path.Make());
+  const pathRef = useRef(path);
+  const pointsRef = useRef([]);
   const [hasPlayedToday, setHasPlayedToday] = useState(false);
   const [todayScore, setTodayScore] = useState(0);
 
@@ -17,24 +21,21 @@ export default function DrawScreen() {
     checkDailyStatus();
   }, []);
 
-  const checkDailyStatus = () => {
+  const checkDailyStatus = async () => {
     const today = new Date().toDateString();
-    const lastPlayed = global.localStorage?.getItem('circle-last-played');
-    const storedScore = global.localStorage?.getItem(`circle-score-${today}`);
+    const lastPlayed = await AsyncStorage.getItem("circle-last-played");
+    const storedScore = await AsyncStorage.getItem(`circle-score-${today}`);
 
     if (lastPlayed === today && storedScore) {
       setHasPlayedToday(true);
-      setTodayScore(parseInt(storedScore));
-    } else {
-      setHasPlayedToday(false);
-      setTodayScore(0);
+      setTodayScore(parseInt(storedScore, 10));
     }
   };
 
-  const handleCircleComplete = (score) => {
+  const handleCircleComplete = async (score) => {
     const today = new Date().toDateString();
-    global.localStorage?.setItem(`circle-score-${today}`, score.toString());
-    global.localStorage?.setItem('circle-last-played', today);
+    await AsyncStorage.setItem(`circle-score-${today}`, score.toString());
+    await AsyncStorage.setItem("circle-last-played", today);
 
     setTodayScore(score);
     setHasPlayedToday(true);
@@ -50,39 +51,87 @@ export default function DrawScreen() {
     }
   };
 
-  const touchHandler = useTouchHandler({
-    onStart: (touch) => {
-      const newPath = Skia.Path.Make();
-      newPath.moveTo(touch.x, touch.y);
-      setPath(newPath);
-      points.current = [{ x: touch.x, y: touch.y }];
-    },
-    onActive: (touch) => {
-      const newPath = path.copy();
-      newPath.lineTo(touch.x, touch.y);
-      setPath(newPath);
-      points.current.push({ x: touch.x, y: touch.y });
-    },
-    onEnd: () => {
-      const score = calculateCircleScore(points.current);
-      handleCircleComplete(score);
-    },
-  });
-
-  const handleReset = () => {
-    setPath(Skia.Path.Make());
-    points.current = [];
+  const beginPath = (x, y) => {
+    const newPath = Skia.Path.Make();
+    newPath.moveTo(x, y);
+    pathRef.current = newPath;
+    setPath(newPath.copy());
+    pointsRef.current = [{ x, y }];
   };
 
+  const movePath = (x, y) => {
+    pathRef.current.lineTo(x, y);
+    setPath(pathRef.current.copy());
+    pointsRef.current.push({ x, y });
+  };
+
+  const endPath = () => {
+    if (pointsRef.current.length < 10) {
+      handleCircleComplete(0);
+      return;
+    }
+    const score = calculateCircleScore(pointsRef.current);
+    handleCircleComplete(Math.round(score));
+  };
+
+  const resetCanvas = () => {
+    const newPath = Skia.Path.Make();
+    pathRef.current = newPath;
+    setPath(newPath);
+    pointsRef.current = [];
+    setTodayScore(0);
+  };
+
+  const pan = Gesture.Pan()
+    .runOnJS(true)
+    .onBegin(({ x, y }) => !hasPlayedToday && beginPath(x, y))
+    .onChange(({ x, y }) => !hasPlayedToday && movePath(x, y))
+    .onEnd(() => !hasPlayedToday && endPath())
+    .onFinalize(() => !hasPlayedToday && endPath());
+
+  // 🔒 FULL LOCKED SCREEN
+  if (hasPlayedToday) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.title}>Circle Challenge</Text>
+        <Text style={styles.lockedMessage}>⏳ Come back tomorrow!</Text>
+        <Text style={styles.bigScore}>Your Score Today: {todayScore}/100</Text>
+        <Text style={styles.subtitle}>You only get one attempt per day.</Text>
+
+        <TouchableOpacity
+          style={[styles.button, { marginTop: 30 }]}
+          onPress={() => navigation.navigate("Home")}
+        >
+          <Text style={styles.buttonText}>Back to Home</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  // 🎨 PLAYABLE SCREEN
   return (
     <View style={styles.container}>
-      <Canvas style={styles.canvas} onTouch={touchHandler}>
-        <Path path={path} color="black" style="stroke" strokeWidth={3} />
-      </Canvas>
-      <View style={styles.buttonWrapper}>
-        {!hasPlayedToday && <Button title="Clear" onPress={handleReset} />}
-        {hasPlayedToday && <Button title={`Today's Score: ${todayScore}`} disabled />}
-      </View>
+      <Text style={styles.title}>Circle Challenge</Text>
+      <Text style={styles.subtitle}>
+        Try to draw the most perfect circle you can!
+      </Text>
+
+      <GestureDetector gesture={pan}>
+        <Canvas style={styles.canvas}>
+          <Path path={path} color="black" style="stroke" strokeWidth={3} />
+        </Canvas>
+      </GestureDetector>
+
+      <TouchableOpacity style={styles.button} onPress={resetCanvas}>
+        <Text style={styles.buttonText}>Clear</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={[styles.button, { marginTop: 15 }]}
+        onPress={() => navigation.navigate("Home")}
+      >
+        <Text style={styles.buttonText}>Back to Home</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -102,13 +151,13 @@ function calculateCircleScore(points) {
 
   const avgRadius =
     points.reduce(
-      (sum, p) => sum + Math.sqrt((p.x - centerX) ** 2 + (p.y - centerY) ** 2),
+      (sum, p) => sum + Math.hypot(p.x - centerX, p.y - centerY),
       0
     ) / points.length;
 
   const variance =
     points.reduce((sum, p) => {
-      const r = Math.sqrt((p.x - centerX) ** 2 + (p.y - centerY) ** 2);
+      const r = Math.hypot(p.x - centerX, p.y - centerY);
       return sum + Math.abs(r - avgRadius);
     }, 0) / points.length;
 
@@ -116,7 +165,58 @@ function calculateCircleScore(points) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff" },
-  canvas: { flex: 1, backgroundColor: "#f0f0f0" },
-  buttonWrapper: { padding: 10, backgroundColor: "#fff" },
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#eef3fb",
+    padding: 20,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: "bold",
+    marginBottom: 10,
+    color: "#333",
+    textAlign: "center",
+  },
+  subtitle: {
+    fontSize: 16,
+    marginTop: 10,
+    marginBottom: 20,
+    textAlign: "center",
+    color: "#555",
+  },
+  lockedMessage: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "#d9534f",
+    marginTop: 10,
+    textAlign: "center",
+  },
+  bigScore: {
+    fontSize: 24,
+    fontWeight: "700",
+    marginTop: 20,
+    color: "#2a4d8f",
+    textAlign: "center",
+  },
+  canvas: {
+    width: "100%",
+    height: 300,
+    backgroundColor: "#f6f6f6",
+    borderRadius: 12,
+    marginVertical: 20,
+  },
+  button: {
+    backgroundColor: "#2a4d8f",
+    paddingVertical: 12,
+    borderRadius: 10,
+    width: "100%",
+  },
+  buttonText: {
+    color: "#fff",
+    fontSize: 18,
+    textAlign: "center",
+    fontWeight: "600",
+  },
 });

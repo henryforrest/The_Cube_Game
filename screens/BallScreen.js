@@ -210,6 +210,14 @@ export default function HiddenBallGame({ navigation }) {
           ]}
         />
       </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() => navigation.navigate("Home")}
+      >
+        <Text style={styles.buttonText}>Back to Home</Text>
+      </TouchableOpacity>
+
     </View>
   );
 }
@@ -274,5 +282,19 @@ const styles = StyleSheet.create({
     bottom: 0,
     right: 0,
     width: 10,
+  },
+  button: {
+    backgroundColor: "#2a4d8f",
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignSelf: "stretch",  
+    marginTop: 30,        
+    maxWidth: 400,       
+  },
+  buttonText: {
+    color: "#fff",
+    fontSize: 18,
+    textAlign: "center",
+    fontWeight: "600",
   },
 });
