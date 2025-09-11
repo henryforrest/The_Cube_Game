@@ -147,15 +147,18 @@ export default function HiddenBallGame({ navigation }) {
     return (
       <View style={styles.container}>
         <Text style={styles.title}>Hidden Ball</Text>
+
+        {lastResult === "win" && (
+          <Text style={styles.resultText}>✅ Today you found the ball!</Text>
+        )}
+        {lastResult === "lose" && (
+          <Text style={styles.resultText}>❌ Today you missed the ball.</Text>
+        )}
+
         <Text style={styles.lockedMessage}>⏳ Come back tomorrow!</Text>
         <Text style={styles.subtitle}>You only get one attempt per day.</Text>
 
-        {lastResult === "win" && (
-          <Text style={styles.resultText}>✅ Yesterday you found the ball!</Text>
-        )}
-        {lastResult === "lose" && (
-          <Text style={styles.resultText}>❌ Yesterday you missed the ball.</Text>
-        )}
+        
 
         <TouchableOpacity
           style={styles.button}
@@ -364,6 +367,7 @@ const styles = StyleSheet.create({
     alignSelf: "stretch",
     marginTop: 30,
     maxWidth: 400,
+    alignSelf: "center",
   },
   buttonText: {
     color: "#fff",
