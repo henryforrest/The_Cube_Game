@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   Dimensions,
   Animated,
-  Alert,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -26,6 +25,8 @@ export default function HiddenBallGame({ navigation }) {
   const [clicked, setClicked] = useState(false);
   const [ballVisible, setBallVisible] = useState(true);
   const [locked, setLocked] = useState(false);
+  const [result, setResult] = useState(null); // "win" | "lose" | null
+  const [lastResult, setLastResult] = useState(null); // yesterday’s outcome
 
   const raf = useRef(null);
   const flickerRef = useRef(null);
@@ -37,8 +38,11 @@ export default function HiddenBallGame({ navigation }) {
     const checkAttempt = async () => {
       const today = new Date().toDateString();
       const lastAttempt = await AsyncStorage.getItem("hiddenBallAttempt");
+      const outcome = await AsyncStorage.getItem("hiddenBallResult");
+
       if (lastAttempt === today) {
         setLocked(true);
+        setLastResult(outcome); // "win" or "lose"
       }
     };
     checkAttempt();
@@ -46,7 +50,7 @@ export default function HiddenBallGame({ navigation }) {
 
   // animate ball
   useEffect(() => {
-    if (locked) return;
+    if (locked || result) return;
 
     const animate = () => {
       setBall((prev) => {
@@ -78,11 +82,11 @@ export default function HiddenBallGame({ navigation }) {
 
     raf.current = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(raf.current);
-  }, [locked]);
+  }, [locked, result]);
 
   // fade out after 2s and then flicker
   useEffect(() => {
-    if (locked) return;
+    if (locked || result) return;
 
     const timeout = setTimeout(() => {
       setBallVisible(false);
@@ -109,48 +113,109 @@ export default function HiddenBallGame({ navigation }) {
       clearTimeout(timeout);
       clearInterval(flickerRef.current);
     };
-  }, [ballVisible, locked]);
+  }, [ballVisible, locked, result]);
 
   const handlePress = async (e) => {
     if (clicked || locked) return;
     setClicked(true);
 
-    // mark attempt for today
     const today = new Date().toDateString();
-    await AsyncStorage.setItem("hiddenBallAttempt", today);
-
-    // stop animation + flicker
-    cancelAnimationFrame(raf.current);
-    clearInterval(flickerRef.current);
-
     const { locationX, locationY } = e.nativeEvent;
     const dx = locationX - ball.x;
     const dy = locationY - ball.y;
     const dist = Math.sqrt(dx * dx + dy * dy);
 
+    let outcome;
     if (dist <= BALL_RADIUS) {
-      Alert.alert("🎉 You Win!", "You found the ball!", [
-        { text: "OK", onPress: () => navigation.goBack() },
-      ]);
+      outcome = "win";
+      setResult("win");
     } else {
-      Alert.alert("❌ You Failed!", "Try again tomorrow ⏳", [
-        { text: "OK", onPress: () => navigation.goBack() },
-      ]);
+      outcome = "lose";
+      setResult("lose");
     }
+
+    // store attempt + result
+    await AsyncStorage.setItem("hiddenBallAttempt", today);
+    await AsyncStorage.setItem("hiddenBallResult", outcome);
+
+    cancelAnimationFrame(raf.current);
+    clearInterval(flickerRef.current);
   };
 
+  // --- LOCKED SCREEN ---
   if (locked) {
     return (
       <View style={styles.container}>
         <Text style={styles.title}>Hidden Ball</Text>
         <Text style={styles.lockedMessage}>⏳ Come back tomorrow!</Text>
-        <Text style={styles.subtitle}>
-          You only get one attempt per day.
-        </Text>
+        <Text style={styles.subtitle}>You only get one attempt per day.</Text>
+
+        {lastResult === "win" && (
+          <Text style={styles.resultText}>✅ Yesterday you found the ball!</Text>
+        )}
+        {lastResult === "lose" && (
+          <Text style={styles.resultText}>❌ Yesterday you missed the ball.</Text>
+        )}
+
+        <TouchableOpacity
+          style={styles.button}
+          onPress={() =>
+            navigation.reset({
+              index: 0,
+              routes: [{ name: "Home" }],
+            })
+          }
+        >
+          <Text style={styles.buttonText}>Back to Home</Text>
+        </TouchableOpacity>
       </View>
     );
   }
 
+  // --- WIN SCREEN ---
+  if (result === "win") {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.title}>🎉 You Win!</Text>
+        <Text style={styles.subtitle}>You found the hidden ball!</Text>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={() =>
+            navigation.reset({
+              index: 0,
+              routes: [{ name: "Home" }],
+            })
+          }
+        >
+          <Text style={styles.buttonText}>Back to Home</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  // --- LOSE SCREEN ---
+  if (result === "lose") {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.title}>Unlucky!</Text>
+        <Text style={styles.subtitle}>❌ You did not touch the ball.</Text>
+        <Text style={styles.subtitle}>Come back tomorrow to try again!</Text>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={() =>
+            navigation.reset({
+              index: 0,
+              routes: [{ name: "Home" }],
+            })
+          }
+        >
+          <Text style={styles.buttonText}>Back to Home</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  // --- MAIN GAME SCREEN ---
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Hidden Ball</Text>
@@ -164,21 +229,18 @@ export default function HiddenBallGame({ navigation }) {
         style={styles.box}
         disabled={locked}
       >
-        {/* Ball (visible at start, flickers later) */}
-        {!locked && (
-          <Animated.View
-            style={{
-              position: "absolute",
-              top: ball.y - BALL_RADIUS,
-              left: ball.x - BALL_RADIUS,
-              width: BALL_RADIUS * 2,
-              height: BALL_RADIUS * 2,
-              borderRadius: BALL_RADIUS,
-              backgroundColor: "white",
-              opacity: ballVisible ? 1 : ballOpacity,
-            }}
-          />
-        )}
+        <Animated.View
+          style={{
+            position: "absolute",
+            top: ball.y - BALL_RADIUS,
+            left: ball.x - BALL_RADIUS,
+            width: BALL_RADIUS * 2,
+            height: BALL_RADIUS * 2,
+            borderRadius: BALL_RADIUS,
+            backgroundColor: "white",
+            opacity: ballVisible ? 1 : ballOpacity,
+          }}
+        />
 
         {/* Walls */}
         <View
@@ -212,11 +274,17 @@ export default function HiddenBallGame({ navigation }) {
       </TouchableOpacity>
 
       <TouchableOpacity
-        style={[styles.button, { marginTop: 15 }]}
-        onPress={() => navigation.navigate("Home")}
+        style={[styles.button, { marginTop: 20 }]}
+        onPress={() =>
+          navigation.reset({
+            index: 0,
+            routes: [{ name: "Home" }],
+          })
+        }
       >
         <Text style={styles.buttonText}>Back to Home</Text>
       </TouchableOpacity>
+
 
     </View>
   );
@@ -249,6 +317,12 @@ const styles = StyleSheet.create({
     color: "#d9534f",
     marginTop: 10,
     textAlign: "center",
+  },
+  resultText: {
+    fontSize: 18,
+    marginTop: 15,
+    textAlign: "center",
+    color: "#333",
   },
   box: {
     width: BOX_SIZE,
@@ -287,9 +361,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#2a4d8f",
     paddingVertical: 12,
     borderRadius: 10,
-    alignSelf: "stretch",  
-    marginTop: 30,        
-    maxWidth: 400,       
+    alignSelf: "stretch",
+    marginTop: 30,
+    maxWidth: 400,
   },
   buttonText: {
     color: "#fff",

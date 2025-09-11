@@ -133,6 +133,9 @@ export default function DrawScreen({ navigation }) {
         <Text style={styles.buttonText}>Back to Home</Text>
       </TouchableOpacity>
     </View>
+
+
+
   );
 }
 
