@@ -107,7 +107,7 @@ export default function OppositeScreen({ navigation }) {
             })()}
 
             <TouchableOpacity
-              style={[styles.button, { marginTop: 20 }]}
+              style={[styles.button, { marginTop: 30 }]}
               onPress={() => navigation.navigate("Home")}
             >
               <Text style={styles.buttonText}>Back to Home</Text>
@@ -173,6 +173,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#2a4d8f",
     paddingVertical: 12,
     borderRadius: 10,
+    width: "100%",
   },
   buttonText: {
     color: "#fff",
