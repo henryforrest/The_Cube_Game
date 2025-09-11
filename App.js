@@ -10,6 +10,7 @@ import LeaderboardScreen from "./screens/LeaderboardScreen";
 import OppositeScreen from "./screens/Opposite";
 import BallScreen from "./screens/BallScreen";
 import ThisOrThatScreen from "./screens/ThisOrThatScreen";
+import MemoryDrawScreen from "./screens/MemoryDrawScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -28,6 +29,7 @@ export default function App() {
           <Stack.Screen name="Opposite" component={OppositeScreen} />
           <Stack.Screen name="Ball" component={BallScreen} />
           <Stack.Screen name="ThisThat" component={ThisOrThatScreen} />
+          <Stack.Screen name="MemoryDraw" component={MemoryDrawScreen} />
         </Stack.Navigator>
       </NavigationContainer>
     </GestureHandlerRootView>

@@ -6,7 +6,7 @@ const games = [
   { name: "Opposite", route: "Opposite" },
   { name: "Hidden Ball 🔮", route: "Ball" },
   { name: "This or That", route: "ThisThat" },
-  { name: "Coming Soon" },
+  { name: "Memory Draw", route: "MemoryDraw" },
   { name: "Coming Soon" },
 ];
 
