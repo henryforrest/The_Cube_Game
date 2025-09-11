@@ -17,7 +17,11 @@ export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <NavigationContainer>
-        <Stack.Navigator>
+        <Stack.Navigator
+          screenOptions={{
+              headerShown: false, // 🚀 Hides the header (and back button) on ALL screens
+            }}
+        >
           <Stack.Screen name="Home" component={HomeScreen} />
           <Stack.Screen name="Draw" component={DrawScreen} />
           <Stack.Screen name="Leaderboard" component={LeaderboardScreen} />

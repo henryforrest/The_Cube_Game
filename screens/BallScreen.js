@@ -212,7 +212,7 @@ export default function HiddenBallGame({ navigation }) {
       </TouchableOpacity>
 
       <TouchableOpacity
-        style={styles.button}
+        style={[styles.button, { marginTop: 15 }]}
         onPress={() => navigation.navigate("Home")}
       >
         <Text style={styles.buttonText}>Back to Home</Text>
