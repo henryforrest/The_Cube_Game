@@ -116,12 +116,24 @@ export default function HiddenBallGame({ navigation }) {
   }, [ballVisible, locked, result]);
 
    // 🔄 Dev Retry Button: clears today's play restriction
-   const devRetry = async () => {
-    await AsyncStorage.removeItem("shape-last-played");
-    await AsyncStorage.removeItem(`shape-score-${new Date().toDateString()}`);
-    setHasPlayedToday(false);
-    resetCanvas();
-    Alert.alert("🔧 Dev Retry", "Daily lock has been reset!");
+  const devRetry = async () => {
+    const today = new Date().toDateString();
+    await AsyncStorage.removeItem("hiddenBallAttempt");
+    await AsyncStorage.removeItem("hiddenBallResult");
+
+    setLocked(false);
+    setResult(null);
+    setClicked(false);
+    setBall({
+      x: BOX_SIZE / 2,
+      y: BOX_SIZE / 2,
+      vx: VELOCITY.x,
+      vy: VELOCITY.y,
+    });
+    setBallVisible(true);
+    setLitWall(null);
+
+    console.log("🔧 Dev Retry: daily lock reset");
   };
 
   const handlePress = async (e) => {
@@ -167,8 +179,6 @@ export default function HiddenBallGame({ navigation }) {
         <Text style={styles.lockedMessage}>⏳ Come back tomorrow!</Text>
         <Text style={styles.subtitle}>You only get one attempt per day.</Text>
 
-        
-
         <TouchableOpacity
           style={styles.button}
           onPress={() =>
@@ -180,6 +190,15 @@ export default function HiddenBallGame({ navigation }) {
         >
           <Text style={styles.buttonText}>Back to Home</Text>
         </TouchableOpacity>
+
+        {/* 🔄 Dev-only Retry Button */}
+        <TouchableOpacity
+          style={[styles.devButton, { marginTop: 20 }]}
+          onPress={devRetry}
+        >
+          <Text style={styles.devButtonText}>🔧 Dev Retry</Text>
+        </TouchableOpacity>
+
       </View>
     );
   }
@@ -222,14 +241,6 @@ export default function HiddenBallGame({ navigation }) {
           }
         >
           <Text style={styles.buttonText}>Back to Home</Text>
-        </TouchableOpacity>
-
-        {/* 🔄 Dev-only Retry Button */}
-        <TouchableOpacity
-          style={[styles.devButton, { marginTop: 20 }]}
-          onPress={devRetry}
-        >
-          <Text style={styles.devButtonText}>🔧 Dev Retry</Text>
         </TouchableOpacity>
 
       </View>

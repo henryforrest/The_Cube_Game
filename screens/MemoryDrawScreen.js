@@ -46,14 +46,9 @@ export default function ShapeMemoryScreen({ navigation }) {
     setTodayScore(score);
     setHasPlayedToday(true);
 
+    // 🎯 Score Feedback change later to update total score 
     if (score >= 95) {
       Alert.alert("Perfect!", "🎯 You memorised it perfectly!");
-    } else if (score >= 85) {
-      Alert.alert("Amazing!", "🔥 Almost perfect!");
-    } else if (score >= 70) {
-      Alert.alert("Great!", "👏 Solid memory!");
-    } else {
-      Alert.alert("Good effort", "📈 Try again tomorrow!");
     }
   };
 
@@ -97,7 +92,6 @@ export default function ShapeMemoryScreen({ navigation }) {
     await AsyncStorage.removeItem(`shape-score-${new Date().toDateString()}`);
     setHasPlayedToday(false);
     resetCanvas();
-    Alert.alert("🔧 Dev Retry", "Daily lock has been reset!");
   };
 
   const pan = Gesture.Pan()
@@ -170,34 +164,42 @@ export default function ShapeMemoryScreen({ navigation }) {
 
 // Simple shape generator (random squiggle)
 function generateShape() {
-  const path = Skia.Path.Make();
-  let x = Math.random() * 250 + 25;
-  let y = Math.random() * 250 + 25;
-  path.moveTo(x, y);
-
-  for (let i = 0; i < 5; i++) {
-    x += Math.random() * 100 - 50;
-    y += Math.random() * 100 - 50;
-    path.lineTo(x, y);
+    const path = Skia.Path.Make();
+    let x = 50 + Math.random() * 200; // start somewhere inside canvas
+    let y = 50 + Math.random() * 200;
+    path.moveTo(x, y);
+  
+    // make larger movements (±80 instead of ±50)
+    for (let i = 0; i < 6; i++) {
+      x += Math.random() * 160 - 80;
+      y += Math.random() * 160 - 80;
+      path.lineTo(x, y);
+    }
+  
+    return path;
   }
-
-  return path;
-}
+  
 
 // Compare user path to target shape
 function compareShapes(userPoints, targetPath) {
-  const targetPoints = samplePath(targetPath, 20);
-  let score = 100;
-  const len = Math.min(userPoints.length, targetPoints.length);
-  for (let i = 0; i < len; i++) {
-    const d = Math.hypot(
-      userPoints[i].x - targetPoints[i].x,
-      userPoints[i].y - targetPoints[i].y
-    );
-    score -= d / 2;
+    const targetPoints = samplePath(targetPath, 40); // more samples
+    const len = Math.min(userPoints.length, targetPoints.length);
+  
+    let totalDist = 0;
+    for (let i = 0; i < len; i++) {
+      totalDist += Math.hypot(
+        userPoints[i].x - targetPoints[i].x,
+        userPoints[i].y - targetPoints[i].y
+      );
+    }
+  
+    const avgDist = totalDist / len;
+    const canvasDiag = Math.hypot(300, 300); // normalize by canvas size (~424)
+    let score = 100 - (avgDist / canvasDiag) * 100;
+  
+    return Math.max(0, Math.min(100, score));
   }
-  return Math.max(0, score);
-}
+  
 
 // Simple path sampler
 function samplePath(path, numPoints) {
@@ -250,11 +252,11 @@ const styles = StyleSheet.create({
   },
   canvas: {
     width: "100%",
-    height: 300,
+    height: 400, // bigger play area
     backgroundColor: "#f6f6f6",
     borderRadius: 12,
     marginVertical: 20,
-  },
+  },  
   button: {
     backgroundColor: "#2a4d8f",
     paddingVertical: 12,

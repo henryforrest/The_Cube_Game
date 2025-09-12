@@ -40,14 +40,9 @@ export default function DrawScreen({ navigation }) {
     setTodayScore(score);
     setHasPlayedToday(true);
 
+    // 🎯 Score Feedback change later on to update total score
     if (score >= 95) {
-      Alert.alert("Perfect!", "🎯 You're a circle master!");
-    } else if (score >= 85) {
-      Alert.alert("Amazing!", "🔥 Almost perfect!");
-    } else if (score >= 70) {
-      Alert.alert("Great!", "👏 Solid circle!");
-    } else {
-      Alert.alert("Good effort", "📈 Try again tomorrow!");
+      Alert.alert("Perfect!", "🎯 You're a circle master!"); 
     }
   };
 
@@ -88,7 +83,6 @@ export default function DrawScreen({ navigation }) {
     await AsyncStorage.removeItem(`shape-score-${new Date().toDateString()}`);
     setHasPlayedToday(false);
     resetCanvas();
-    Alert.alert("🔧 Dev Retry", "Daily lock has been reset!");
   };
 
   const pan = Gesture.Pan()
