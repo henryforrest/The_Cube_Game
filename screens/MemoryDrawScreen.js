@@ -91,6 +91,15 @@ export default function ShapeMemoryScreen({ navigation }) {
     setTimeout(() => setShowShape(false), 3000);
   };
 
+  // 🔄 Dev Retry Button: clears today's play restriction
+  const devRetry = async () => {
+    await AsyncStorage.removeItem("shape-last-played");
+    await AsyncStorage.removeItem(`shape-score-${new Date().toDateString()}`);
+    setHasPlayedToday(false);
+    resetCanvas();
+    Alert.alert("🔧 Dev Retry", "Daily lock has been reset!");
+  };
+
   const pan = Gesture.Pan()
     .runOnJS(true)
     .onBegin(({ x, y }) => !hasPlayedToday && beginPath(x, y))
@@ -113,6 +122,15 @@ export default function ShapeMemoryScreen({ navigation }) {
         >
           <Text style={styles.buttonText}>Back to Home</Text>
         </TouchableOpacity>
+
+        {/* 🔄 Dev-only Retry Button */}
+        <TouchableOpacity
+          style={[styles.devButton, { marginTop: 20 }]}
+          onPress={devRetry}
+        >
+          <Text style={styles.devButtonText}>🔧 Dev Retry</Text>
+        </TouchableOpacity>
+
       </View>
     );
   }
@@ -127,14 +145,17 @@ export default function ShapeMemoryScreen({ navigation }) {
 
       <GestureDetector gesture={pan}>
         <Canvas style={styles.canvas}>
-          {showShape && <Path path={targetShape} color="#2a4d8f" style="stroke" strokeWidth={3} />}
+          {showShape && (
+            <Path
+              path={targetShape}
+              color="#2a4d8f"
+              style="stroke"
+              strokeWidth={3}
+            />
+          )}
           <Path path={path} color="black" style="stroke" strokeWidth={3} />
         </Canvas>
       </GestureDetector>
-
-      <TouchableOpacity style={styles.button} onPress={resetCanvas}>
-        <Text style={styles.buttonText}>Clear / New Shape</Text>
-      </TouchableOpacity>
 
       <TouchableOpacity
         style={[styles.button, { marginTop: 15 }]}
@@ -142,6 +163,7 @@ export default function ShapeMemoryScreen({ navigation }) {
       >
         <Text style={styles.buttonText}>Back to Home</Text>
       </TouchableOpacity>
+
     </View>
   );
 }
@@ -164,8 +186,6 @@ function generateShape() {
 
 // Compare user path to target shape
 function compareShapes(userPoints, targetPath) {
-  // Very simple approximation: score decreases if distances deviate
-  // Here we sample points from targetPath (could be enhanced with more sophisticated math)
   const targetPoints = samplePath(targetPath, 20);
   let score = 100;
   const len = Math.min(userPoints.length, targetPoints.length);
@@ -174,14 +194,13 @@ function compareShapes(userPoints, targetPath) {
       userPoints[i].x - targetPoints[i].x,
       userPoints[i].y - targetPoints[i].y
     );
-    score -= d / 2; // scale penalty
+    score -= d / 2;
   }
   return Math.max(0, score);
 }
 
 // Simple path sampler
 function samplePath(path, numPoints) {
-  // Approximate: just evenly space points along path bounds
   const points = [];
   const bounds = path.getBounds();
   for (let i = 0; i < numPoints; i++) {
@@ -247,5 +266,17 @@ const styles = StyleSheet.create({
     fontSize: 18,
     textAlign: "center",
     fontWeight: "600",
+  },
+  devButton: {
+    backgroundColor: "#f39c12",
+    paddingVertical: 12,
+    borderRadius: 10,
+    width: "100%",
+  },
+  devButtonText: {
+    color: "#fff",
+    fontSize: 18,
+    textAlign: "center",
+    fontWeight: "700",
   },
 });

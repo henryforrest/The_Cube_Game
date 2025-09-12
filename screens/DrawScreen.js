@@ -82,6 +82,15 @@ export default function DrawScreen({ navigation }) {
     setTodayScore(0);
   };
 
+  // 🔄 Dev Retry Button: clears today's play restriction
+  const devRetry = async () => {
+    await AsyncStorage.removeItem("shape-last-played");
+    await AsyncStorage.removeItem(`shape-score-${new Date().toDateString()}`);
+    setHasPlayedToday(false);
+    resetCanvas();
+    Alert.alert("🔧 Dev Retry", "Daily lock has been reset!");
+  };
+
   const pan = Gesture.Pan()
     .runOnJS(true)
     .onBegin(({ x, y }) => !hasPlayedToday && beginPath(x, y))
@@ -103,6 +112,14 @@ export default function DrawScreen({ navigation }) {
           onPress={() => navigation.navigate("Home")}
         >
           <Text style={styles.buttonText}>Back to Home</Text>
+        </TouchableOpacity>
+
+        {/* 🔄 Dev-only Retry Button */}
+        <TouchableOpacity
+          style={[styles.devButton, { marginTop: 20 }]}
+          onPress={devRetry}
+        >
+          <Text style={styles.devButtonText}>🔧 Dev Retry</Text>
         </TouchableOpacity>
       </View>
     );
@@ -221,5 +238,17 @@ const styles = StyleSheet.create({
     fontSize: 18,
     textAlign: "center",
     fontWeight: "600",
+  },
+  devButton: {
+    backgroundColor: "#f39c12",
+    paddingVertical: 12,
+    borderRadius: 10,
+    width: "100%",
+  },
+  devButtonText: {
+    color: "#fff",
+    fontSize: 18,
+    textAlign: "center",
+    fontWeight: "700",
   },
 });

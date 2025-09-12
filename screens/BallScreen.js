@@ -115,6 +115,15 @@ export default function HiddenBallGame({ navigation }) {
     };
   }, [ballVisible, locked, result]);
 
+   // 🔄 Dev Retry Button: clears today's play restriction
+   const devRetry = async () => {
+    await AsyncStorage.removeItem("shape-last-played");
+    await AsyncStorage.removeItem(`shape-score-${new Date().toDateString()}`);
+    setHasPlayedToday(false);
+    resetCanvas();
+    Alert.alert("🔧 Dev Retry", "Daily lock has been reset!");
+  };
+
   const handlePress = async (e) => {
     if (clicked || locked) return;
     setClicked(true);
@@ -214,6 +223,15 @@ export default function HiddenBallGame({ navigation }) {
         >
           <Text style={styles.buttonText}>Back to Home</Text>
         </TouchableOpacity>
+
+        {/* 🔄 Dev-only Retry Button */}
+        <TouchableOpacity
+          style={[styles.devButton, { marginTop: 20 }]}
+          onPress={devRetry}
+        >
+          <Text style={styles.devButtonText}>🔧 Dev Retry</Text>
+        </TouchableOpacity>
+
       </View>
     );
   }
@@ -368,11 +386,24 @@ const styles = StyleSheet.create({
     marginTop: 30,
     maxWidth: 400,
     alignSelf: "center",
+    width: "100%",
   },
   buttonText: {
     color: "#fff",
     fontSize: 18,
     textAlign: "center",
     fontWeight: "600",
+  },
+  devButton: {
+    backgroundColor: "#f39c12",
+    paddingVertical: 12,
+    borderRadius: 10,
+    width: "100%",
+  },
+  devButtonText: {
+    color: "#fff",
+    fontSize: 18,
+    textAlign: "center",
+    fontWeight: "700",
   },
 });
